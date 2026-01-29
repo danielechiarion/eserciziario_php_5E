@@ -1,0 +1,29 @@
+.deniel-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 50px;
+    overflow: visible;
+}
+
+.deniel-image{
+    align-items: center;
+    height: 300px;
+    width:auto;
+    border-radius: 20px;
+}
+
+.deniel-image:hover{
+    border: 2px solid red;
+    transform: scale(1.2);
+    transition-duration: 0.7s;
+    z-index: 10;
+}
+
+body{
+    background-image: url('https://e1.pxfuel.com/desktop-wallpaper/424/7/desktop-wallpaper-html-body-backgrounds-full-screen-html5-background.jpg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    background-size: cover;
+}
