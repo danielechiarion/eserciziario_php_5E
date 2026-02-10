@@ -1,6 +1,12 @@
 <?php
+function get_database_parameters(){
+    $file_content = file_get_contents('../database-access.json');
+    return json_decode($file_content, true);
+}
+
 session_start(); // start of the session
-$connection = new mysqli("192.168.60.144", "daniele_chiarion", "", "daniele_chiarion_auto");
+$database_data = get_database_parameters(); //get database parameters
+$connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
 
 if($connection->connect_error)
     die("Connection failed: ".$connection->connect_error);
@@ -30,6 +36,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     } else {
         $_SESSION['error_message'] = "User not found!";
         header("Location: login.php");
+        exit(1);
     }
 
     /* get the list of cars in order to display them on the page */
@@ -37,6 +44,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $query->bind_param("i", $_SESSION['ID']);
     $query->execute();
     $result = $query->get_result();
+}else{
+    header("Location: login.php");
+    exit(1);
 }
 ?>
 
@@ -48,11 +58,36 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     </head>
     <body>
-        <?php if($result->num_rows === 0){ ?>
+        <?php if(isset($result) || $result->num_rows == 0): ?>
         <div class="alert alert-danger mt-3 d-flex justify-content-center px-3">
             <strong>Nessuna macchina inserita</strong>
         </div>
-        <?php } else {} ?>
+        <?php else: ?>
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>Marca</th>
+                            <th>Modello</th>
+                            <th>Cilindrata</th>
+                            <th>Potenza</th>
+                            <th>Lunghezza</th>
+                            <th>Larghezza</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($result as $row){ ?>
+                            <tr>
+                                <td><?=$row['marca']?></td>
+                                <td><?=$row['modello']?></td>
+                                <td><?=$row['cilindrata']?>cc</td>
+                                <td><?=$row['potenza']?>CV</td>
+                                <td><?=$row['lunghezza']?>cm</td>
+                                <td><?=$row['larghezza']?>cm</td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+        <?php endif; ?>
     </body>
 </html>
 <?php $connection->close(); ?>
