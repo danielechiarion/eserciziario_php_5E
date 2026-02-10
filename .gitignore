@@ -1,2 +1,2 @@
 # exclude database access json file
-database-access.json
+./database-access.json
