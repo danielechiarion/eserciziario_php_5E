@@ -1,18 +1,24 @@
 <?php
+/**
+ * Function to get database parameters of the database
+ * from a specified file in order to establish the connection
+ * @return mixed JSON file content with parameters
+ */
 function get_database_parameters(){
     $file_content = file_get_contents('../database-access.json');
     return json_decode($file_content, true);
 }
 
-session_start(); // start of the session
-$database_data = get_database_parameters(); //get database parameters
-$connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
-
-if($connection->connect_error)
-    die("Connection failed: ".$connection->connect_error);
-
-/* get username and password from the */
-if($_SERVER["REQUEST_METHOD"] == "POST"){
+/**
+ * Function to verify the login of the user
+ * and return to the login page if it not valid
+ * @param $database_data mixed data for the connection to the database
+ */
+function login_user($database_data){
+    /* start connection with the database */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if($connection->connect_error)
+        die("Connection failed: ".$connection->connect_error);
     /* get username and password from
     the form */
     $username = $_POST["username"];
@@ -23,6 +29,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $query->bind_param("ss", $username, $password);
     $query->execute();
     $result = $query->get_result();
+    $connection->close(); // close the connection
 
     if ($result->num_rows === 1) {
         $row = $result->fetch_assoc();
@@ -38,16 +45,65 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         header("Location: login.php");
         exit(1);
     }
+}
 
+/**
+ * Function to return a list of cars related to user
+ * @param $database_data mixed data to connect to a specified database
+ * @return false|mysqli_result|void result from the query
+ */
+function display_cars($database_data){
+    /* start connection with the database */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if($connection->connect_error)
+        die("Connection failed: ".$connection->connect_error);
     /* get the list of cars in order to display them on the page */
     $query = $connection->prepare("SELECT marca,modello,cilindrata,potenza,lunghezza,larghezza FROM auto WHERE proprietario = ?");
     $query->bind_param("i", $_SESSION['ID']);
     $query->execute();
     $result = $query->get_result();
-}else{
-    header("Location: login.php");
-    exit(1);
+
+    $connection->close(); // close the connection
+
+    return $result;
 }
+
+/**
+ * Function to save car data based on metadata
+ * @param $database_data mixed of the database
+ * @return void
+ */
+function add_car($database_data){
+    /* start connection with the database */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if($connection->connect_error)
+        die("Connection failed: ".$connection->connect_error);
+
+    /* make prepared query */
+    $query = $connection->prepare("INSERT INTO auto (marca, modello, cilindrata, potenza, lunghezza, larghezza, proprietario) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $query->bind_param("ssiiiii", $_POST['brand'], $_POST['model'], $_POST['displacement'], $_POST['power'], $_POST['length'], $_POST['width'], $_SESSION['ID']);
+    $query->execute();
+
+    $connection->close(); // close connection
+}
+
+session_start(); // start of the session
+$database_data = get_database_parameters(); //get database parameters
+
+/* check the request method and associate it to the right c */
+if($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['action'] == 'login')
+    login_user($database_data);
+else if($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['action'] == 'add_car')
+    add_car($database_data);
+
+/* if the user is not logged make him come back
+to the login page */
+if(!$_SESSION['logged_in'])
+    header("Location: login.php");
+
+if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
+    $result = display_cars($database_data);
+
 ?>
 
 <!DOCTYPE html>
@@ -88,6 +144,23 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     </tbody>
                 </table>
         <?php endif; ?>
+
+        <form class="mt-3" method="POST" action="dashboard.php">
+            <label for="brand">Inserisci macchina:</label>
+            <input type="text" placeholder="Inserisci marca" name="brand" class="form-control">
+            <label for="brand">Inserisci modello:</label>
+            <input type="text" placeholder="Inserisci modello" name="model"  class="form-control">
+            <label for="brand">Inserisci cilindrata (cc):</label>
+            <input type="number" placeholder="Inserisci cilindrata" name="displacement"  class="form-control">
+            <label for="brand">Inserisci potenza (CV):</label>
+            <input type="number" placeholder="Inserisci potenza" name="power"  class="form-control">
+            <label for="brand">Inserisci lunghezza (cm):</label>
+            <input type="number" placeholder="Inserisci lunghezza" name="length"  class="form-control">
+            <label for="brand">Inserisci larghezza (cm):</label>
+            <input type="number" placeholder="Inserisci larghezza" name="width"  class="form-control">
+            <button type="submit" class="btn btn-primary mt-3" name="action" value="add_car">Aggiungi macchina</button>
+        </form>
+
+        <button class="btn btn-danger mt-3" onclick="window.location.href='logout.php'">Logout</button>
     </body>
 </html>
-<?php $connection->close(); ?>
