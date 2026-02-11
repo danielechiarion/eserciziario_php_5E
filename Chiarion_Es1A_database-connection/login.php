@@ -18,16 +18,14 @@
         <div class="col-2"></div>
     </div>
     <div class="row">
-        <div class="col-2"></div>
-        <div class="col-8">
+        <div class="col-12 justify-content-center">
             <form action="dashboard.php" method="POST" class="d-flex flex-column">
-                <input type="text" placeholder="Inserisci username..." name="username" required>
-                <input type="password" name="password" required>
-                <button type="submit" name="action" value="login">Login</button>
-                <button class="btn btn-secondary" onclick="window.location.href='sign-up.php'">Registrati</button>
+                <input type="text" placeholder="Inserisci username..." name="username" class="form-control item-space" required>
+                <input type="password" name="password" class="form-control item-space" required>
+                <button type="submit" name="action" value="login" class="btn btn-primary item-space">Login</button>
+                <button class="btn btn-secondary item-space" onclick="window.location.href='sign-up.php'">Registrati</button>
             </form>
         </div>
-        <div class="col-2"></div>
     </div>
 </div>
 <?php if (isset($_SESSION['error_message']) && $_SESSION['error_message']): ?>
