@@ -79,6 +79,33 @@ function add_car($database_data){
     if($connection->connect_error)
         die("Connection failed: ".$connection->connect_error);
 
+    /* check data validity
+    between a certain range */
+    if(!is_int($_POST['displacement']) && ($_POST['displacement']<0 || $_POST['displacement']>50000)){
+        echo '<script>alert("Cilindrata inserita non valida")</script>';
+        return;
+    }
+    if(!is_int($_POST['power']) && ($_POST['power']<0 || $_POST['power']>1500)){
+        echo '<script>alert("Potenza inserita non valida")</script>';
+        return;
+    }
+    if(!is_int($_POST['width']) && ($_POST['width']<0 || $_POST['width']>500)){
+        echo '<script>alert("Larghezza inserita non valida")</script>';
+        return;
+    }
+    if(!is_int($_POST['length']) && ($_POST['length']<0 || $_POST['displacement']>1500)){
+        echo '<script>alert("Lunghezza inserita non valida")</script>';
+        return;
+    }
+
+    /* sanitize values */
+    $_POST['model'] = filter_var($_POST['model'], FILTER_SANITIZE_STRING);
+    $_POST['brand'] = filter_var($_POST['brand'], FILTER_SANITIZE_STRING);
+    $_POST['power'] = filter_var($_POST['power'], FILTER_SANITIZE_NUMBER_INT);
+    $_POST['displacement'] = filter_var($_POST['displacement'], FILTER_SANITIZE_NUMBER_INT);
+    $_POST['length'] = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
+    $_POST['width'] = filter_var($_POST['width'], FILTER_SANITIZE_NUMBER_INT);
+
     /* make prepared query */
     $query = $connection->prepare("INSERT INTO auto (marca, modello, cilindrata, potenza, lunghezza, larghezza, proprietario) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $query->bind_param("ssiiiii", $_POST['brand'], $_POST['model'], $_POST['displacement'], $_POST['power'], $_POST['length'], $_POST['width'], $_SESSION['ID']);
