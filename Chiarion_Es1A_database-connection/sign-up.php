@@ -13,7 +13,7 @@ function get_database_parameters(){
 
 /* if the user wants to sign up but is logged,
 first logout and then sign up again */
-if($_SESSION['logged_in'])
+if(array_key_exists('logged_in', $_SESSION) && $_SESSION['logged_in'])
     header("Location: logout.php");
 
 $database_data = get_database_parameters();
