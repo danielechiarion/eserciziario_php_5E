@@ -93,14 +93,14 @@ function add_car($database_data){
         echo '<script>alert("Larghezza inserita non valida")</script>';
         return;
     }
-    if(!is_int($_POST['length']) && ($_POST['length']<0 || $_POST['displacement']>1500)){
+    if(!is_int($_POST['length']) && ($_POST['length']<0 || $_POST['length']>15000)){
         echo '<script>alert("Lunghezza inserita non valida")</script>';
         return;
     }
 
     /* sanitize values */
-    $_POST['model'] = filter_var($_POST['model'], FILTER_SANITIZE_STRING);
-    $_POST['brand'] = filter_var($_POST['brand'], FILTER_SANITIZE_STRING);
+    $_POST['model'] = htmlspecialchars($_POST['model']);
+    $_POST['brand'] = htmlspecialchars($_POST['brand']);
     $_POST['power'] = filter_var($_POST['power'], FILTER_SANITIZE_NUMBER_INT);
     $_POST['displacement'] = filter_var($_POST['displacement'], FILTER_SANITIZE_NUMBER_INT);
     $_POST['length'] = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
@@ -112,6 +112,10 @@ function add_car($database_data){
     $query->execute();
 
     $connection->close(); // close connection
+    /* reset connection and redirect to the page */
+    $_POST = array();
+    header('Location: dashboard.php');
+    exit;
 }
 
 session_start(); // start of the session
@@ -143,13 +147,37 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
     </head>
     <body>
         <div class="container">
-            <div class="row">
+            <div class="row mt-2">
                 <div class="col-12 text-center">
                     <h2>Benvenuto, <?=$_SESSION['username']?></h2>
                 </div>
             </div>
         </div>
         <div class="row justify-content-center">
+            <div class="col-10 justify-content-center">
+                <form method="POST" action="dashboard.php" class="d-flex flex-column">
+                    <label for="brand">Inserisci macchina:</label>
+                    <input type="text" placeholder="Inserisci marca" name="brand" class="form-control">
+                    <label for="brand">Inserisci modello:</label>
+                    <input type="text" placeholder="Inserisci modello" name="model"  class="form-control">
+                    <label for="brand">Inserisci cilindrata (cc):</label>
+                    <input type="number" placeholder="Inserisci cilindrata" name="displacement"  class="form-control">
+                    <label for="brand">Inserisci potenza (CV):</label>
+                    <input type="number" placeholder="Inserisci potenza" name="power"  class="form-control">
+                    <label for="brand">Inserisci lunghezza (cm):</label>
+                    <input type="number" placeholder="Inserisci lunghezza" name="length"  class="form-control">
+                    <label for="brand">Inserisci larghezza (cm):</label>
+                    <input type="number" placeholder="Inserisci larghezza" name="width"  class="form-control">
+                    <button type="submit" class="btn btn-primary mt-3" name="action" value="add_car">Aggiungi macchina</button>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 text-center">
+                <button class="btn btn-danger mt-3" onclick="window.location.href='logout.php'">Logout</button>
+            </div>
+        </div>
+        <div class="row justify-content-center mt-3">
             <div class="col-10 d-flex justify-content-center">
                 <?php if(!isset($result) || $result->num_rows == 0): ?>
                     <div class="alert alert-danger mt-3 d-flex justify-content-center px-3">
@@ -181,30 +209,6 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
                         </tbody>
                     </table>
                 <?php endif; ?>
-            </div>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-10 justify-content-center">
-                <form method="POST" action="dashboard.php" class="d-flex flex-column">
-                    <label for="brand">Inserisci macchina:</label>
-                    <input type="text" placeholder="Inserisci marca" name="brand" class="form-control">
-                    <label for="brand">Inserisci modello:</label>
-                    <input type="text" placeholder="Inserisci modello" name="model"  class="form-control">
-                    <label for="brand">Inserisci cilindrata (cc):</label>
-                    <input type="number" placeholder="Inserisci cilindrata" name="displacement"  class="form-control">
-                    <label for="brand">Inserisci potenza (CV):</label>
-                    <input type="number" placeholder="Inserisci potenza" name="power"  class="form-control">
-                    <label for="brand">Inserisci lunghezza (cm):</label>
-                    <input type="number" placeholder="Inserisci lunghezza" name="length"  class="form-control">
-                    <label for="brand">Inserisci larghezza (cm):</label>
-                    <input type="number" placeholder="Inserisci larghezza" name="width"  class="form-control">
-                    <button type="submit" class="btn btn-primary mt-3" name="action" value="add_car">Aggiungi macchina</button>
-                </form>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12 text-center">
-                <button class="btn btn-danger mt-3" onclick="window.location.href='logout.php'">Logout</button>
             </div>
         </div>
     </body>
