@@ -147,6 +147,7 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
         <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     </head>
     <body>
         <div class="container">
@@ -187,15 +188,51 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
                         <strong>Nessuna macchina inserita</strong>
                     </div>
                 <?php else: ?>
-                    <table class="table table-striped mt-3">
+                    <table class="table table-striped mt-3" style="table-layout: fixed;">
                         <thead>
                         <tr>
-                            <th>Marca</th>
-                            <th>Modello</th>
-                            <th>Cilindrata</th>
-                            <th>Potenza</th>
-                            <th>Lunghezza</th>
-                            <th>Larghezza</th>
+                            <th class="table-search-column">
+                                <div class="d-flex justify-content-between">
+                                    Marca
+                                    <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
+                                </div>
+                                <input type="text" class="table-search-input" style="display:none;" placeholder="Cerca...">
+                            </th>
+                            <th class="table-search-column">
+                                <div class="d-flex justify-content-between">
+                                    Modello
+                                    <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
+                                </div>
+                                <input type="text" class="table-search-input" style="display:none;" placeholder="Cerca...">
+                            </th>
+                            <th class="table-search-column">
+                                <div class="d-flex justify-content-between">
+                                    Cilindrata
+                                    <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
+                                </div>
+                                <input type="number" class="table-search-input" style="display:none;">
+                            </th>
+                            <th class="table-search-column">
+                                <div class="d-flex justify-content-between">
+                                    Potenza
+                                    <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
+                                </div>
+                                <input type="number" class="table-search-input" style="display:none;">
+                            </th>
+                            <th class="table-search-column">
+                                <div class="d-flex justify-content-between">
+                                    Lunghezza
+                                    <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
+                                </div>
+                                <input type="number" class="table-search-input" style="display:none;">
+                            </th>
+                            <th class="table-search-column">
+                                <div class="d-flex justify-content-between">
+                                    Larghezza
+                                    <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
+                                </div>
+                                <input type="number" class="table-search-input" style="display:none;">
+                            </th>
                         </tr>
                         </thead>
                         <tbody>
@@ -214,5 +251,7 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
                 <?php endif; ?>
             </div>
         </div>
+
+        <script src="research-table.js"></script>
     </body>
 </html>
