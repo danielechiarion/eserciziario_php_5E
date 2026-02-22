@@ -54,7 +54,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['action']=='sign-up'){
                     <form method="POST" action="sign-up.php" class="d-flex flex-column">
                         <input class="form-control item-space" type="text" placeholder="Inserisci username..." name="username" required>
                         <input class="form-control item-space" type="password" name="password" required>
-                        <button class="btn btn-primary item-space" type="submit" name="action" value="sign-up">Login</button>
+                        <button class="btn btn-primary item-space" type="submit" name="action" value="sign-up">Registrati</button>
                     </form>
                 </div>
             </div>

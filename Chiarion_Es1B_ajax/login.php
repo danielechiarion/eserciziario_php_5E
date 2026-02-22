@@ -33,19 +33,28 @@
     $("#login-form").on("submit", function(e){
         e.preventDefault(); // blocca il submit normale
 
+        /* get form data and convert to object */
+        var formData = {
+            username: $('input[name="username"]').val(),
+            password: $('input[name="password"]').val(),
+            action: 'login'
+        };
+
         $.ajax({
             url: "dashboard.php",
             type: "POST",
-            data: $(this).serialize()+"&action=login",
+            data: formData,
             dataType: "json",
             success: function(response){
+                console.log('Login response:', response);
                 if(response.success){
                     window.location.href = "dashboard.php";
                 } else {
                     $("#login-error").removeClass("d-none");
                 }
             },
-            error: function(){
+            error: function(xhr, status, error){
+                console.error("Login error:", error, xhr.responseText);
                 $("#login-error").removeClass("d-none");
             }
         });

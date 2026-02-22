@@ -121,19 +121,87 @@ function add_car($database_data){
     exit;
 }
 
+/**
+ * Function to research a car and change the view of the table
+ * @param $database_data
+ * @return void
+ */
+function research_car($database_data){
+    /* establish connection */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if($connection->connect_error){
+        die(json_encode(['error' => 'Connection failed: ' . $connection->connect_error]));
+    }
+
+    /* prepare the query before executing it */
+    $sql = "SELECT marca,modello,cilindrata,potenza,lunghezza,larghezza FROM auto WHERE proprietario = ? ";
+    $types = "i";
+    $userId = $_SESSION['ID'];
+    $searchValues = array();
+
+    /* add for each key the condition to search similar values */
+    foreach($_POST as $postKey => $postValue){
+        if($postKey == 'action') // action doesn't have to be considered
+            continue;
+
+        $sql .= "AND $postKey LIKE ? ";
+        $types .= "s";
+
+        /* add wildcards to the search value */
+        $searchValues[$postKey] = "%{$postValue}%";
+    }
+
+    /* execute the query and save the result obtained */
+    $query = $connection->prepare($sql);
+    if (!$query) {
+        die(json_encode(['error' => 'Prepare failed: ' . $connection->error]));
+    }
+
+    /* bind parameters properly */
+    $bindParams = array($types, &$userId);
+    foreach($searchValues as &$value){
+        $bindParams[] = &$value;
+    }
+
+    call_user_func_array(array($query, 'bind_param'), $bindParams);
+    $query->execute();
+    $result = $query->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    $query->close();
+    $connection->close();
+
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
 session_start(); // start of the session
 $database_data = get_database_parameters(); //get database parameters
 
-/* check the request method and associate it to the right c */
-if($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['action'] == 'login')
+/* Process login FIRST before checking if user is logged in */
+if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'login') {
     login_user($database_data);
-else if($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['action'] == 'add_car')
-    add_car($database_data);
+}
 
 /* if the user is not logged make him come back
 to the login page */
-if(!$_SESSION['logged_in'])
+if(!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']){
     header("Location: login.php");
+    exit;
+}
+
+/* check the request method and associate it to the right function */
+if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])){
+    if($_POST['action'] == 'add_car')
+        add_car($database_data);
+    else if($_POST['action'] == 'search_car')
+        research_car($database_data);
+}
 
 if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
     $result = display_cars($database_data);
@@ -191,42 +259,42 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
                     <table class="table table-striped mt-3" style="table-layout: fixed;">
                         <thead>
                         <tr>
-                            <th class="table-search-column">
+                            <th class="table-search-column" data-field="marca">
                                 <div class="d-flex justify-content-between">
                                     Marca
                                     <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
                                 </div>
                                 <input type="text" class="table-search-input" style="display:none;" placeholder="Cerca...">
                             </th>
-                            <th class="table-search-column">
+                            <th class="table-search-column" data-field="modello">
                                 <div class="d-flex justify-content-between">
                                     Modello
                                     <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
                                 </div>
                                 <input type="text" class="table-search-input" style="display:none;" placeholder="Cerca...">
                             </th>
-                            <th class="table-search-column">
+                            <th class="table-search-column" data-field="cilindrata">
                                 <div class="d-flex justify-content-between">
                                     Cilindrata
                                     <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
                                 </div>
                                 <input type="number" class="table-search-input" style="display:none;">
                             </th>
-                            <th class="table-search-column">
+                            <th class="table-search-column" data-field="potenza">
                                 <div class="d-flex justify-content-between">
                                     Potenza
                                     <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
                                 </div>
                                 <input type="number" class="table-search-input" style="display:none;">
                             </th>
-                            <th class="table-search-column">
+                            <th class="table-search-column" data-field="lunghezza">
                                 <div class="d-flex justify-content-between">
                                     Lunghezza
                                     <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
                                 </div>
                                 <input type="number" class="table-search-input" style="display:none;">
                             </th>
-                            <th class="table-search-column">
+                            <th class="table-search-column" data-field="larghezza">
                                 <div class="d-flex justify-content-between">
                                     Larghezza
                                     <button class="table-search-btn" style="padding: 0; border: none; background: none; cursor: pointer; font-size: 1rem;">🔍</button>
