@@ -62,7 +62,7 @@ function display_cars($database_data){
     if($connection->connect_error)
         die("Connection failed: ".$connection->connect_error);
     /* get the list of cars in order to display them on the page */
-    $query = $connection->prepare("SELECT marca,modello,cilindrata,potenza,lunghezza,larghezza FROM auto WHERE proprietario = ?");
+    $query = $connection->prepare("SELECT ID,marca,modello,cilindrata,potenza,lunghezza,larghezza FROM auto WHERE proprietario = ?");
     $query->bind_param("i", $_SESSION['ID']);
     $query->execute();
     $result = $query->get_result();
@@ -181,6 +181,80 @@ function research_car($database_data){
     exit;
 }
 
+/**
+ * Function to change the car in the database,
+ * so as to update also the page
+ * @param $database_data mixed data for the connection to the database
+ * @param $previousCarResults mixed previous data of the cars
+ * @return void
+ */
+function change_car($database_data, $previousCarResults){
+    /* check the validity of the data.
+    If they're null or not valid, replace them with the
+    previous ones */
+    if($_POST['marca'] == "")
+        $_POST['marca'] = $previousCarResults[$_POST['index']]['marca'];
+    if($_POST['modello'] == "")
+        $_POST['modello'] = $previousCarResults[$_POST['index']]['modello'];
+
+    if($_POST['cilindrata']<0 || $_POST['cilindrata']>50000)
+        $_POST['cilindrata'] = $previousCarResults[$_POST['index']]['cilindrata'];
+    else
+        $_POST['cilindrata'] = filter_var($_POST['cilindrata'], FILTER_SANITIZE_NUMBER_INT);
+
+    if($_POST['potenza']<0 || $_POST['potenza']>1500)
+        $_POST['potenza'] = $previousCarResults[$_POST['index']]['potenza'];
+    else
+        $_POST['potenza'] = filter_var($_POST['potenza'], FILTER_SANITIZE_NUMBER_INT);
+
+    if($_POST['larghezza']<0 || $_POST['larghezza']>500)
+        $_POST['larghezza'] = $previousCarResults[$_POST['index']]['larghezza'];
+    else
+        $_POST['larghezza'] = filter_var($_POST['larghezza'], FILTER_SANITIZE_NUMBER_INT);
+
+    if($_POST['lunghezza']<0 || $_POST['lunghezza']>15000)
+        $_POST['lunghezza'] = $previousCarResults[$_POST['index']]['lunghezza'];
+    else
+        $_POST['lunghezza'] = filter_var($_POST['lunghezza'], FILTER_SANITIZE_NUMBER_INT);
+
+    /* establish connection */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if($connection->connect_error){
+        die(json_encode(['error' => 'Connection failed: ' . $connection->connect_error]));
+    }
+
+    /* update all the fields of the query
+    that can be changed with the new values */
+    $query = $connection->prepare("UPDATE auto
+                SET marca = ?, modello = ? cilindrata = ?, potenza = ?, lunghezza = ?, larghezza = ?,
+                WHERE ID = ?");
+    $query->bind_param("ssiiiii", $_POST['marca'], $_POST['modello'], $_POST['cilindrata'],
+                $_POST['potenza'], $_POST['lunghezza'], $_POST['larghezza'],
+                $previousCarResults[$_POST['index']['ID']]);
+    $query->execute();
+    $connection->close(); // close connection
+}
+
+/**
+ * Function to delete the car from the list
+ * @param $database_data mixed data for the connection to the database
+ * @param $previousCarResults mixed previous car data
+ * @return void
+ */
+function delete_car($database_data, $previousCarResults){
+    /* establish connection */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if($connection->connect_error){
+        die(json_encode(['error' => 'Connection failed: ' . $connection->connect_error]));
+    }
+
+    /* then delete the car with that specified ID */
+    $query = $connection->prepare("DELETE FROM auto WHERE ID = ?");
+    $query->bind_param("i", $previousCarResults[$_POST['index']]['ID']);
+    $query->execute();
+    $connection->close();
+}
+
 session_start(); // start of the session
 $database_data = get_database_parameters(); //get database parameters
 
@@ -196,16 +270,20 @@ if(!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']){
     exit;
 }
 
+if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
+    $result = display_cars($database_data);
+
 /* check the request method and associate it to the right function */
 if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])){
     if($_POST['action'] == 'add_car')
         add_car($database_data);
     else if($_POST['action'] == 'search_car')
         research_car($database_data);
+    else if($_POST['action'] == 'change_car')
+        change_car($database_data, $result);
+    else if($_POST['action'] == 'delete_car')
+        delete_car($database_data, $result);
 }
-
-if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
-    $result = display_cars($database_data);
 
 ?>
 
@@ -226,27 +304,25 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
         </div>
     </div>
 </div>
-<?php if($_SESSION['admin']){?>
-    <div class="row justify-content-center">
-        <div class="col-10 justify-content-center">
-            <form method="POST" action="dashboard.php" class="d-flex flex-column">
-                <label for="brand">Inserisci macchina:</label>
-                <input type="text" placeholder="Inserisci marca" name="brand" class="form-control">
-                <label for="brand">Inserisci modello:</label>
-                <input type="text" placeholder="Inserisci modello" name="model"  class="form-control">
-                <label for="brand">Inserisci cilindrata (cc):</label>
-                <input type="number" placeholder="Inserisci cilindrata" name="displacement"  class="form-control">
-                <label for="brand">Inserisci potenza (CV):</label>
-                <input type="number" placeholder="Inserisci potenza" name="power"  class="form-control">
-                <label for="brand">Inserisci lunghezza (cm):</label>
-                <input type="number" placeholder="Inserisci lunghezza" name="length"  class="form-control">
-                <label for="brand">Inserisci larghezza (cm):</label>
-                <input type="number" placeholder="Inserisci larghezza" name="width"  class="form-control">
-                <button type="submit" class="btn btn-primary mt-3" name="action" value="add_car">Aggiungi macchina</button>
-            </form>
-        </div>
+<div class="row justify-content-center">
+    <div class="col-10 justify-content-center">
+        <form method="POST" action="dashboard.php" class="d-flex flex-column">
+            <label for="brand">Inserisci macchina:</label>
+            <input type="text" placeholder="Inserisci marca" name="brand" class="form-control">
+            <label for="brand">Inserisci modello:</label>
+            <input type="text" placeholder="Inserisci modello" name="model"  class="form-control">
+            <label for="brand">Inserisci cilindrata (cc):</label>
+            <input type="number" placeholder="Inserisci cilindrata" name="displacement"  class="form-control">
+            <label for="brand">Inserisci potenza (CV):</label>
+            <input type="number" placeholder="Inserisci potenza" name="power"  class="form-control">
+            <label for="brand">Inserisci lunghezza (cm):</label>
+            <input type="number" placeholder="Inserisci lunghezza" name="length"  class="form-control">
+            <label for="brand">Inserisci larghezza (cm):</label>
+            <input type="number" placeholder="Inserisci larghezza" name="width"  class="form-control">
+            <button type="submit" class="btn btn-primary mt-3" name="action" value="add_car">Aggiungi macchina</button>
+        </form>
     </div>
-<?php } ?>
+</div>
 <div class="row">
     <div class="col-12 text-center">
         <button class="btn btn-danger mt-3" onclick="window.location.href='logout.php'">Logout</button>
@@ -304,17 +380,52 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
                         </div>
                         <input type="number" class="table-search-input" style="display:none;">
                     </th>
+                    <?php
+                        if($_SESSION['admin']):
+                            echo "<th>Azioni</th>";
+                        endif;
+                    ?>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach($result as $row){ ?>
                     <tr>
-                        <td><?=$row['marca']?></td>
-                        <td><?=$row['modello']?></td>
-                        <td><?=$row['cilindrata']?>cc</td>
-                        <td><?=$row['potenza']?>CV</td>
-                        <td><?=$row['lunghezza']?>cm</td>
-                        <td><?=$row['larghezza']?>cm</td>
+                        <td class="view-fields"><?=$row['marca']?></td>
+                        <td class="view-fields"><?=$row['modello']?></td>
+                        <td class="view-fields"><?=$row['cilindrata']?>cc</td>
+                        <td class="view-fields"><?=$row['potenza']?>CV</td>
+                        <td class="view-fields"><?=$row['lunghezza']?>cm</td>
+                        <td class="view-fields"><?=$row['larghezza']?>cm</td>
+
+                        <td class="editable-fields d-none">
+                            <input type="text" class="form-control" name="marca" value="<?=$row['marca']?>">
+                        </td>
+                        <td class="editable-fields d-none">
+                            <input type="text" class="form-control" name="modello" value="<?=$row['modello']?>">
+                        </td>
+                        <td class="editable-fields d-none">
+                            <input type="number" class="form-control" name="cilindrata" value="<?=$row['cilindrata']?>"> cc
+                        </td>
+                        <td class="editable-fields d-none">
+                            <input type="number" class="form-control" name="potenza" value="<?=$row['potenza']?>"> CV
+                        </td>
+                        <td class="editable-fields d-none">
+                            <input type="number" class="form-control" name="lunghezza" value="<?=$row['lunghezza']?>"> cm
+                        </td>
+                        <td class="editable-fields d-none">
+                            <input type="text" class="form-control" name="larghezza" value="<?=$row['larghezza']?>"> cm
+                        </td>
+                        <?php if($_SESSION['admin']){ ?>
+                        <td>
+                            <div class="d-flex justify content-center">
+                                <button class="btn btn-warning change-vehicle">Modifica veicolo</button>
+                                <button class="btn btn-danger delete-vehicle">Elimina veicolo</button>
+                                <button class="btn btn-success confirm-change-vehicle d-none">Salva modifiche</button>
+                                <button class="btn btn-danger cancel-change-vehicle d-none">Annulla modifiche</button>
+                            </div>
+                        </td>
+                        <?php }?>
+                        ?>
                     </tr>
                 <?php } ?>
                 </tbody>
@@ -324,5 +435,6 @@ if(isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
 </div>
 
 <script src="research-table.js"></script>
+<script src="car_operations.js"></script>
 </body>
 </html>
