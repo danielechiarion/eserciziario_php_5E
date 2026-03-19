@@ -6,7 +6,7 @@ enum AccountType:string{
 class Account{
     /* define attributes */
     public string $username;
-    public Person $client;
+    public ?Person $client;
     public AccountType $role;
 
     /* constructor of the function */

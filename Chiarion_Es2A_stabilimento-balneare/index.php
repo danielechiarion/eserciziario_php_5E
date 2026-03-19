@@ -1,4 +1,7 @@
 <?php
+include 'classes/Account.php';
+include 'classes/Person.php';
+
 /**
  * Function to get database parameters of the database
  * from a specified file in order to establish the connection
@@ -10,34 +13,61 @@ function get_database_parameters(){
 }
 
 /**
- * Function to get the test the login and select the corresponding
- * page based on the type of account
+ * Function to make all the necessary configurations
+ * at the beginning of the configuration, such as
+ * necessary data on the database
+ * @return void
  */
-function login_account($database_data){
+function load_config($database_data){
     /* create the connection with the database */
     $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
     if($connection->connect_error)
         die("Connection failed: ".$connection->connect_error);
+
+    /* the necessary configuration is to add
+    an admin account that will be added if not present
+    or ignored. This won't reset the possible change of the password */
+    $USERNAME = "admin";
+    $PASSWORD = password_hash("admin", PASSWORD_DEFAULT);
+    $ROLE = AccountType::Administrator->value;
+    $query = $connection->prepare("INSERT IGNORE INTO account (username, password, role) 
+                                            VALUES (?, ?, ?)");
+    $query->bind_param("sss", $USERNAME, $PASSWORD, $ROLE);
+    $query->execute();
+
+    $connection->close();
+}
+
+/**
+ * Function to get the test the login and select the corresponding
+ * page based on the type of account
+ */
+function login_account($database_data)
+{
+    /* create the connection with the database */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if ($connection->connect_error)
+        die("Connection failed: " . $connection->connect_error);
 
     /* get the data from the post */
     $username = $_POST['username'];
     $password = $_POST['password'];
 
     /* make the request of the username */
-    $query = $connection->prepare("SELECT username, password FROM Account WHERE username = ?");
+    $query = $connection->prepare("SELECT username, password, cliente, role FROM Account WHERE username = ?");
     $query->bind_param("s", $username);
     $query->execute();
 
     /* compare the username and passwords
     with the results */
     $result = $query->get_result();
-    if($result->num_rows == 0){
-        echo json_encode(['success' => true]);
+    if ($result->num_rows == 0) {
+        echo json_encode(['success' => false]);
         $connection->close();
         return;
     }
     $row = $result->fetch_assoc();
-    if(!password_verify($password, $row['password'])){
+    if (!password_verify($password, $row['password'])) {
         echo json_encode(['success' => false]);
         $connection->close();
         return;
@@ -45,7 +75,39 @@ function login_account($database_data){
 
     /* otherwise get the account,
     control if it's a client and get the corresponding data */
-    $account = new Account($username, $row['role']);
+    if ($row['cliente'] != null) {
+        $query = $connection->prepare("SELECT nome, cognome FROM persona WHERE CF = ?");
+        $query->bind_param("s", $row['cliente']);
+        $query->execute();
+        $result = $query->get_result()->fetch_assoc();
+        $connection->close();
+
+        $_SESSION['user'] = new Account($row['username'], AccountType::from($row['role']),
+                new Person($row['cliente'], $result['nome'], $result['cognome']));
+
+        echo json_encode(['success' => true, 'redirect' => 'dashboard_client.php']);
+    } else {
+        $connection->close();
+        $_SESSION['user'] = new Account($row['username'], AccountType::from($row['role']));
+        echo json_encode(['success' => true, 'redirect' => 'dashboard_admin.php']);
+    }
+}
+
+/* start the session and
+get the data from the database */
+session_start();
+$database_data = get_database_parameters();
+
+/* get the starting configuration first */
+if(!isset($_SESSION['first_access']) || $_SESSION['first_access']){
+    load_config($database_data);
+    $_SESSION['first_access'] = false;
+}
+
+/* handle the POST request for the login */
+if($_SERVER['REQUEST_METHOD'] == "POST" && $_POST['action'] == "login") {
+    login_account($database_data);
+    exit;
 }
 ?>
 
@@ -91,14 +153,14 @@ function login_account($database_data){
         };
 
         $.ajax({
-            url: <?=$_SERVER['PHP_SELF']?>,
+            url: "<?=$_SERVER['PHP_SELF']?>",
             type: "POST",
             data: formData,
             dataType: "json",
             success: function(response){
                 console.log('Login response:', response);
                 if(response.success){
-                    window.location.href = "dashboard.php";
+                    window.location.href = response.redirect;
                 } else {
                     $("#login-error").removeClass("d-none");
                 }
