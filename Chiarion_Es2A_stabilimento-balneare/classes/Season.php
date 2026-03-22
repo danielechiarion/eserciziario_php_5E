@@ -5,7 +5,7 @@ class Season{
     public int $quantityTowels;
     public float $priceUmbrella;
     public float $priceTowels;
-    public [] $umbrellas;
+    public $umbrellas;
 
     /* create the structure */
     public function __construct(int $year, int $quantityTowels, float $priceUmbrella, float $priceTowels){
@@ -13,6 +13,7 @@ class Season{
         $this->quantityTowels = $quantityTowels;
         $this->priceUmbrella = $priceUmbrella;
         $this->priceTowels = $priceTowels;
+        $this->umbrellas = []; // initialize the list
     }
 
     /* create function for the equals */
