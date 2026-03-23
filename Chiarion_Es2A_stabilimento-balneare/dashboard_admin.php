@@ -144,10 +144,14 @@ function save_season($database_data){
 
 session_start(); // start the session
 
-/* if the user is not logged
+/* if the user is not logged in,
 come back to the login part */
 if(!isset($_SESSION['user']) || $_SESSION['user'] == null)
     header("Location: index.php");
+/* othewrise if it's a client move
+to the client dashboard */
+else if($_SESSION['user']->role == AccountType::Client)
+    header("Location: dashboard_client.php");
 
 $database_data = get_database_parameters(); // get the data from the database
 
@@ -277,13 +281,17 @@ else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
                         foreach($seasons as $season){
                     ?>
                             <tr>
-                                <td><?=$season->year?></td>
-                                <td><?=$season->quantityTowels?></td>
-                                <td><?=number_format($season->priceUmbrella, 2, ',', '.')?> €</td>
-                                <td><?=number_format($season->priceTowels, 2, ',', '.')?> €</td>
+                                <td class="season-year"><?=$season->year?></td>
+                                <td class="season-quantity-towels"><?=$season->quantityTowels?></td>
+                                <td class="season-price-umbrella"><?=number_format($season->priceUmbrella, 2, ',', '.')?> €</td>
+                                <td class="season-price-towels"><?=number_format($season->priceTowels, 2, ',', '.')?> €</td>
                                 <td class="d-flex justify-content-center gap-2">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <button class="btn btn-primary view-report">Report</button>
+                                        <form action="season_report.php" method="POST">
+                                            <input type="hidden" name="action" value="view_report">
+                                            <input type="hidden" name="year" value="<?=$season->year?>">
+                                            <button type="submit" class="btn btn-warning">Report</button>
+                                        </form>
 
                                         <?php if($season->year == date("Y")){ ?>
                                             <button class="btn btn-warning change-season">Modifica</button>
