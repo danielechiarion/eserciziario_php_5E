@@ -114,7 +114,7 @@ function save_season($database_data){
     $year = date("Y");
     $query = $connection->prepare("INSERT IGNORE INTO stagione(anno, quantitaTeli, prezzoTeli, prezzoOmbrelloni) 
                                             VALUES (?, ?, ?, ?)");
-    $query->bind_param("iidd", $year, $_POST['number_towels'], $_POST['price_towels'], $_POST['price_umbrella']);
+    $query->bind_param("iidd", $year, $_POST['number_towels'], $_POST['price_towels'], $_POST['price_umbrellas']);
     $query->execute();
 
     /* update the relation between
@@ -137,6 +137,9 @@ function save_season($database_data){
     }
 
     $connection->close();
+
+    /* at the end reload the page */
+    header("Location: {$_SERVER['PHP_SELF']}");
 }
 
 session_start(); // start the session
@@ -221,7 +224,7 @@ else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
                 added, otherwise throw a section with an alarm
                 with the message to add it */
                 $result = array_filter($seasons, function($item){
-                   $item->equals(new Season(date("Y"), 0, 0.0, 0.0));
+                   return $item->equals(new Season(date("Y"), 0, 0.0, 0.0));
                 });
 
                 if(empty($result)):
@@ -258,7 +261,7 @@ else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
             if(!empty($seasons)):
         ?>
             <div class="col-12 d-flex justify-content-center">
-                <table class="table table-striped">
+                <table class="table table-striped text-center align-middle">
                     <thead>
                         <tr>
                             <th>Anno</th>
@@ -276,14 +279,16 @@ else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
                             <tr>
                                 <td><?=$season->year?></td>
                                 <td><?=$season->quantityTowels?></td>
-                                <td><?=$season->priceUmbrella?></td>
-                                <td><?=$season->priceTowels?></td>
-                                <td>
-                                    <button class="btn btn-primary view-report">Report</button>
-                                    <!-- Button visible only when it's the current season -->
-                                    <?php if($season->year == date("Y")){ ?>
-                                    <button class="btn btn-danger change-season">Modifica</button>
-                                    <?php } ?>
+                                <td><?=number_format($season->priceUmbrella, 2, ',', '.')?> €</td>
+                                <td><?=number_format($season->priceTowels, 2, ',', '.')?> €</td>
+                                <td class="d-flex justify-content-center gap-2">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button class="btn btn-primary view-report">Report</button>
+
+                                        <?php if($season->year == date("Y")){ ?>
+                                            <button class="btn btn-warning change-season">Modifica</button>
+                                        <?php } ?>
+                                    </div>
                                 </td>
                             </tr>
                     <?php } ?>
