@@ -142,6 +142,28 @@ function save_season($database_data){
     header("Location: {$_SERVER['PHP_SELF']}");
 }
 
+/**
+ * Function to change the season
+ * based on the data sent via POST
+ * @param $database_data
+ * @return void
+ */
+function change_season($database_data){
+    /* create the connection with the database */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if ($connection->connect_error)
+        die("Connection failed: " . $connection->connect_error);
+
+    /* create the connection to
+    update the data given */
+    $query = $connection->prepare("UPDATE stagione
+                                        SET quantitaTeli = ?, prezzoTeli = ?, prezzoOmbrelloni = ?,
+                                        WHERE anno = ?");
+    $query->bind_param("iddi", $_POST['quantity_towels'], $_POST['price_towels'], $_POST['price_umbrella'], $_POST['year']);
+    $query->execute();
+    $connection->close();
+}
+
 session_start(); // start the session
 
 /* if the user is not logged in,
@@ -163,6 +185,8 @@ if($_SERVER['REQUEST_METHOD'] == "POST" && $_POST['action'] == "update_loungers"
     update_beach_loungers($database_data, $beach_loungers);
 else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
     save_season($database_data);
+else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']="change_season")
+    change_season($database_data);
 ?>
 
 <!DOCTYPE html>
@@ -282,12 +306,22 @@ else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
                     ?>
                             <tr>
                                 <td class="season-year"><?=$season->year?></td>
-                                <td class="season-quantity-towels"><?=$season->quantityTowels?></td>
-                                <td class="season-price-umbrella"><?=number_format($season->priceUmbrella, 2, ',', '.')?> €</td>
-                                <td class="season-price-towels"><?=number_format($season->priceTowels, 2, ',', '.')?> €</td>
+                                <td class="season-quantity-towels view-fields"><?=$season->quantityTowels?></td>
+                                <td class="season-price-umbrella view-fields"><?=number_format($season->priceUmbrella, 2, ',', '.')?> €</td>
+                                <td class="season-price-towels view-fields"><?=number_format($season->priceTowels, 2, ',', '.')?> €</td>
+
+                                <td class="input-fields">
+                                    <input type="number" class="form-control" value="<?=$season->quantityTowels?>" min="0" max="200" name="quantity_towels">
+                                </td>
+                                <td class="input-fields">
+                                    <input type="number" class="form-control" value="<?=$season->priceUmbrella?>" min="0" max="200" step="0.01" name="price_umbrella">
+                                </td>
+                                <td class="input-fields">
+                                    <input type="number" class="form-control" value="<?=$season->priceTowels?>" min="0" max="200" step="0.01" name="price_towels">
+                                </td>
                                 <td class="d-flex justify-content-center gap-2">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <form action="season_report.php" method="POST">
+                                        <form action="season_report.php" method="POST" class="view-report">
                                             <input type="hidden" name="action" value="view_report">
                                             <input type="hidden" name="year" value="<?=$season->year?>">
                                             <button type="submit" class="btn btn-warning">Report</button>
@@ -295,6 +329,8 @@ else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
 
                                         <?php if($season->year == date("Y")){ ?>
                                             <button class="btn btn-warning change-season">Modifica</button>
+                                            <button class="btn btn-success confirm-change-season d-none">Conferma</button>
+                                            <button class="btn btn-success cancel-change-season d-none">Annulla</button>
                                         <?php } ?>
                                     </div>
                                 </td>
