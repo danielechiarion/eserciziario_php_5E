@@ -26,7 +26,7 @@ function get_seasons($database_data){
     /* get all the seasons joined with the
     umbrellas */
     $query = $connection->prepare("SELECT anno,quantitaTeli,prezzoTeli,prezzoOmbrelloni,ombrellone
-                                    FROM stagione JOIN stagione_ombrellone ON stagione.anno = ombrellone.stagione
+                                    FROM stagione JOIN stagione_ombrellone ON stagione.anno = stagione_ombrellone.stagione
                                     ORDER BY anno DESC");
     $query->execute();
     $result = $query->get_result();
@@ -98,7 +98,54 @@ function update_beach_loungers($database_data, &$currentBeachLoungers){
     $connection->close();
 }
 
+/**
+ * Function to save the season into the database
+ * updating the related tables
+ * @param $database_data mixed data for the connection to the database
+ * @return void
+ */
+function save_season($database_data){
+    /* create the connection with the database */
+    $connection = new mysqli($database_data['host'], $database_data['username'], $database_data['password'], $database_data['database']);
+    if ($connection->connect_error)
+        die("Connection failed: " . $connection->connect_error);
+
+    /* first save the season inside the related table */
+    $year = date("Y");
+    $query = $connection->prepare("INSERT IGNORE INTO stagione(anno, quantitaTeli, prezzoTeli, prezzoOmbrelloni) 
+                                            VALUES (?, ?, ?, ?)");
+    $query->bind_param("iidd", $year, $_POST['number_towels'], $_POST['price_towels'], $_POST['price_umbrella']);
+    $query->execute();
+
+    /* update the relation between
+    umbrellas and season */
+    for($i=1;$i<=$_POST['number_umbrellas'];$i++){
+        $query = $connection->prepare("INSERT INTO stagione_ombrellone (stagione, ombrellone) VALUES (?,?)");
+        $query->bind_param("ii", $year, $i);
+        $query->execute();
+    }
+
+    /* add eventual umbrella if it's necessary
+    and update the IDs */
+    $query = $connection->prepare("SELECT COUNT(ID) as totale FROM ombrellone");
+    $query->execute();
+    $umbrellas = $query->get_result()->fetch_assoc()['totale'];
+
+    for($i=0;$i<$_POST['number_umbrellas']-$umbrellas;$i++){
+        $query = $connection->prepare("INSERT INTO ombrellone () VALUES ()");
+        $query->execute();
+    }
+
+    $connection->close();
+}
+
 session_start(); // start the session
+
+/* if the user is not logged
+come back to the login part */
+if(!isset($_SESSION['user']) || $_SESSION['user'] == null)
+    header("Location: index.php");
+
 $database_data = get_database_parameters(); // get the data from the database
 
 $beach_loungers = check_beach_lounger($database_data); // get the beach loungers number
@@ -107,6 +154,8 @@ $seasons = get_seasons($database_data); // get also the seasons
 /* control the requests coming */
 if($_SERVER['REQUEST_METHOD'] == "POST" && $_POST['action'] == "update_loungers")
     update_beach_loungers($database_data, $beach_loungers);
+else if($_SERVER['REQUEST_METHOD']=="POST" && $_POST['action']=='add_season')
+    save_season($database_data);
 ?>
 
 <!DOCTYPE html>
@@ -190,11 +239,15 @@ if($_SERVER['REQUEST_METHOD'] == "POST" && $_POST['action'] == "update_loungers"
                     <label>Inserisci il numero di teli: </label>
                     <input type="number" name="number_towels" min="0" max="200" class="form-control" required>
                     <label>Inserisci il prezzo degli ombrelloni </label>
-                    <input type="number" name="price_umbrellas" min="0" max="30" step="0.01" class="form-control" required> €
+                    <div class="d-flex justify-content-center">
+                        <input type="number" name="price_umbrellas" min="0" max="30" step="0.01" class="form-control" required> €
+                    </div>
                     <label>Inserisci il prezzo dei teli: </label>
-                    <input type="number" name="price_towels" min="0" max="10" step="0.01" class="form-control" required> €
+                    <div class="d-flex justify-content-center">
+                        <input type="number" name="price_towels" min="0" max="10" step="0.01" class="form-control" required> €
+                    </div>
 
-                    <button type="submit" class="btn btn-success mt-3" name="action" value="add_season"></button>
+                    <button type="submit" class="btn btn-success mt-3" name="action" value="add_season">Aggiungi</button>
                 </form>
             </div>
         <?php endif; ?>

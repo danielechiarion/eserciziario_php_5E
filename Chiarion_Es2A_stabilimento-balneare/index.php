@@ -54,7 +54,7 @@ function login_account($database_data)
     $password = $_POST['password'];
 
     /* make the request of the username */
-    $query = $connection->prepare("SELECT username, password, cliente, role FROM Account WHERE username = ?");
+    $query = $connection->prepare("SELECT username, password, cliente, role FROM account WHERE username = ?");
     $query->bind_param("s", $username);
     $query->execute();
 
